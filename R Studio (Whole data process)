@@ -1,0 +1,348 @@
+################################################
+######### Created by Mudabbir. Khawaja
+######## MBAN HULT SF 2021 
+######## DATE 10/14/2021
+######### Version 0.1
+################################################
+
+###COMMENT BY CREATOR###
+###IN THE FOLLOWING LINES, YOU WILL FIND A WHOLE WORK AROUND THE DATA SCIENCE PROCESS. 
+###STARTING WITH UNDERSTANDING THE DATA, MASSAGING THE DATA, DISCRIPTIVE DATA, PRESCRTIVE DATA AND VISUALIZATION.
+###ENJOY###
+
+install.packages ("mass")
+library (mass)
+#reading in a excel from the local drive
+library(readxl)
+my_germ <- read_excel("/Users/Mudabbir/Desktop/german credit card (1).xls")
+
+View(my_germ)
+#######
+
+
+##creating a few random objects
+
+count_questions <- 21
+count_customers <- 1000
+
+#putting them together in a vector
+germ_dim <- c(count_customers,count_questions)
+#chaging the game
+customer_age <- c(16,23,29,25,26,23,25,24,25,45)
+age_matrix <- matrix(customer_age, nrow=2, ncol=5, byrow=TRUE)
+
+##subsetting
+customer_age [6:10]
+my_germ[1:100,c("age","amount")]
+
+#creating a list
+my_list <- list(my_germ,age_matrix,count_customers,count_questions)
+View (my_list)
+
+#changing and testing data types
+is.numeric(my_germ$good_bad)
+is.character (my_germ$good_bad)
+
+as.numeric(my_germ$good_bad)
+as.numeric(my_germ$purpose)
+
+# using the which () to subset and filter based on business conditions
+which(my_germ$purpose == "X")
+my_germ [which(my_germ$purpose == "X"),]
+summary(my_germ [which(my_germ$good_bad == "good"),]) #analyzing good customers
+summary(my_germ [which(my_germ$good_bad == "bad"),])
+
+#fixing the data with gsub ()
+my_germ$purpose_fixed <- as.numeric(gsub ("X","",my_germ$purpose))
+my_germ$binary <- gsub("good", "1", my_germ$good_bad)
+my_germ$binary  <- gsub("bad", "0", my_germ$binary)
+my_germ$binary  <- as.numeric(my_germ$binary)
+
+#session 4 loops and if statement
+my_germ <- as.data.frame(my_germ)
+
+for (i in 1:3){
+  print (min(my_germ[,i], na.rm=TRUE))
+  print (mean(my_germ[,i], na.rm=TRUE))
+  print (max(my_germ[,i], na.rm=TRUE))
+  }#closing the i-loop
+
+
+#creating a new variabel 
+my_germ$score <-c()
+for (i in 1:nrow(my_germ)){
+my_germ$score [i] <- 0.5*my_germ$duration[i] +
+  0.1*my_germ$amount[i]+
+    0.1*my_germ$age [i]+
+    0.3*my_germ$installp[i]
+}#Closing the second i-loop
+
+
+
+#our own formula
+
+my_germ$analysis <-c()
+for (i in 1:nrow(my_germ)){
+  my_germ$analysis [i] <- 0.2*my_germ$duration[i]+
+    0.2*my_germ$amount[i]+
+    0.1*my_germ$age [i]+
+    0.2*my_germ$history[i]+
+  0.2*my_germ$savings[i]+
+    0.2*my_germ$property[i]
+  
+  
+}#Closing the second i-loop
+
+#labeling based on custom logic "outstanding" 
+
+my_germ$label <- c()
+
+for (i in 1:nrow(my_germ)){
+  if (my_germ$label[i] < 500 & my_germ$binary[i]==1 ) {
+    my_germ$label[i] <- "outstanding"
+    }else{
+      my_germ$label [i] <- "not outstanding"
+  }
+}#Closing if-statement
+
+
+# Session #5 UDFs and desc stats
+
+team_score <- function(var1, var2, var3,var4, w1, w2, w3, w4){
+  my_score <- w1*var1 + w2*var2 + w3*var3 + w4*var4
+  min_score <- min (my_score, na.rm = TRUE)
+  mean_score <- mean (my_score, na.rm = TRUE)
+  max_score <- max (my_score, na.rm = TRUE)
+  return(c(min_score, mean_score, max_score))
+}#Closing 
+
+team10 <- team_score(var1=my_germ$duration, w1=0.4,
+                      var2=my_germ$amount, w2=0.2,
+                      var3=my_germ$history, w3= 0.2,
+                      var4=my_germ$job, w4= 0.2)
+
+team4_best <- team_score(my_germ$duration, my_germ$amount, my_germ$history,
+                         my_germ$employed, 0.3,0.2,0.2,0.3)
+
+
+team1_long <- team_score(var1=my_germ$duration, w1=0.5, 
+                         +            var2=my_germ$amount, w2=0.1,
+                         +            var3=my_germ$age, w3=0.1,
+                         +            var4=my_germ$installp, w4=0.3)
+
+team1 <- team_score (my_germ$duration, my_germ$amount, my_germ$age,
+                     my_germ$installp, 0.5,0.1,0.1,0.3)
+
+
+#Session5_Calculating mu & sigma for all the variables - because of all the old numeric variables, they need to be changed into real numeric variables) 
+
+
+for (i in 1:ncol(my_germ)){
+  try(my_mu <- mean(my_germ[,i], na.rm =TRUE))
+  try(my_sd <- sd(my_germ[,i], na.rm =TRUE))
+  try (print (c(my_mu, my_sd)))
+  
+}#Closing the loop 
+
+mu_sigma_udf <- function (var1){
+  try (my_mu <- mean (var1, na.rn=TRUE))
+  try (my_sd <- sd (var1, na.rn=TRUE))
+  try (return (my_mu, my_sd))
+  }
+
+
+mu_sigma_udf (var1 =my_germ$checking)
+
+
+##Session5_dice_work
+
+
+
+my_dice <- sample(c(1,2,3,4,5,6), size=100, replace = TRUE)
+mean (my_dice)
+hist(my_dice)
+
+
+##Session5_coin_work
+
+my_coin <-(c(1,0,0,0,0,0,0,1,1,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,1,0,1,0,1,0,0,0,1,0,1,0,1,1,1,1,0,0,0,0,1,0,1,0,1,0,1,0,1,0))
+mean(my_coin)
+
+my_binary <- sample (c(0.1), size = 100000, replace= TRUE)
+mean (my_binary)
+hist (my_binary)
+
+my_exp <- rexp (100000, rate)
+
+#create a for loop to check histogram for all my_germs
+
+for (i in 1: ncol (my_germ)){
+  try (hist(my_germ[,i]))
+}#Closing the loop
+
+
+##########CLASS6 Data Science
+
+library (ggplot2)
+ggplot(data=my_germ, aes(x=marital,y=amount, color= good_bad))+
+  geom_jitter()
+
+
+ggplot(data=my_germ, aes(x=depends, y=amount, color=good_bad))+
+  geom_jitter()
+
+
+my_scatter <- ggplot(data=my_germ, aes(x=duration, y=amount, color=good_bad))+
+              geom_point()+
+              scale_color_manual (values=c("#FF3C33","#FFDA33"))
+
+install.packages("plotly")
+library ("plotly")
+
+ggplotly (my_scatter)
+
+####session 6
+###standardization
+
+standard <- function (var1){
+  my_standard <- ((var1-mean(var1))/sd(var1))*10+50
+  return(my_standard)
+}
+
+
+
+
+my_germ$age_standard <- standard(var1=my_germ$age)
+my_germ$amount_standard <- standard(var1=my_germ$amount)
+mean(my_germ$age_standard)
+mean(my_germ$amount_standard)
+
+
+sd(my_germ$age_standard)
+sd(my_germ$amount_standard)
+
+summary(my_germ$age_standard)
+
+
+###sesssion6
+normal <- function (var1){
+my_normal <- (var1-min(var1))/(max(var1)-min(var1))  
+  return (my_normal)
+}#closing the loop
+
+my_germ$checking_norm <- normal(var1=my_germ$checking)
+my_germ$duration_norm <- normal(var1=my_germ$duration)
+my_germ$amount_norm <- normal(var1=my_germ$amount)
+my_germ$employed_norm <- normal(var1=my_germ$employed)#
+my_germ$installp_norm <- normal(var1=my_germ$installp)
+my_germ$age_norm <- normal(var1=my_germ$age)
+my_germ$existcr_norm <- normal(var1=my_germ$existcr)
+my_germ$telephon_norm <- normal(var1=my_germ$telephon)
+
+
+#creating training and testing data sets
+
+train_index <- sample(1:nrow(my_germ), size=0.8*nrow(my_germ))
+
+germ_train <- my_germ [train_index,]
+germ_test <- my_germ [-train_index,]
+
+######Session7
+####creating a predictive model 
+
+my_linear <- lm(amount ~age, data=germ_train)
+summary (my_linear)
+
+
+exp (0.9)-1
+
+
+
+####creating logistic regression model for data with units
+my_legit_better <- glm (binary~checking+duration+age+telephon+amount+savings
+                 +installp+coapp, data=germ_train, family="binomial")
+
+
+summary (my_legit_better)
+
+
+###designing a unitless logistic regression
+
+my_legit_norm <- glm(binary~checking_norm+duration_norm+age_norm
+                 +amount_norm+installp_norm,
+                 data=germ_train, family="binomial")
+
+summary(my_legit_norm)
+
+exp (0.6557)-1
+
+##take SDE from the variables and use exp() for business insight
+## "for every additional business unit (x) the odds of business sucess
+## will decrease/increase by = result from exp()
+
+
+###
+View (my_list)
+
+####session 8 - performance eval 
+install.packages ("caret")
+install.packages ("lattice")
+install.packages ("ggplot2")
+
+library (caret)
+
+my_prediction_training <- predict(my_legit_norm, germ_train, type= "response")
+
+##Confusion Matrix shows how accurate your model is, is the model accurate enough or not 
+confusionMatrix(data= as.factor(as.numeric(my_prediction_training>0.5)), 
+                reference= as.factor(as.numeric(germ_train$binary)))
+
+
+###Accuracy= Correctly predicted / (divided) by total n
+
+##creating the AUC ROC framework: 
+#install.packages ("ROCR")
+
+install.packages ("ROCR")
+library (ROCR)
+
+my_prediction <- my_prediction_training
+
+pred_val_logit <- prediction(my_prediction, germ_train$binary)
+perf_logit <- performance(pred_val_logit, "tpr","fpr")
+
+plot (perf_logit)
+
+
+##gin exercise - do it again on your own with germ data
+ginmale = 1-(0/5)^2-(5/5)^2
+ginfemale = 1- (6/6)^2-(0/6)^2
+gin (sex) = 5/11*0+6/11*0
+
+##treee
+
+library (rpart)
+library (rpart.plot)
+
+my_tree <- rpart (binary ~ checking+duration+age+telephon+amount+savings+
+                  installp+coapp, data=germ_train, method="class",
+                  cp= 0.01)
+
+
+rpart.plot (my_tree, extra =1, type=1)
+
+########
+###Session 9
+###lmao
+##########
+
+my_tree_predict_test <- predict (my_tree, germ_test, type = "prob")
+my_tree_predict_train <- predict (my_tree, germ_train, type = "prob")
+
+my_tree_prediction <- prediction (my_tree_predict_train[,2], germ_train$binary)
+my_tree_performance <- performance (my_tree_prediction, "tpr", "fpr")
+
+plot (my_tree_performance, col="black")
+plot (perf_logit, col="red", add=TRUE)
+
+
